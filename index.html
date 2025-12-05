@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusTimer - Countdown with Alert</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            font-family:'Space Grotesk',sans-serif;
+            background:linear-gradient(135deg,#0f0f23,#1a1a2e,#16213e);
+            color:#e0e0ff;
+            min-height:100vh;
+            display:grid;
+            place-items:center;
+            padding:2rem 1rem;
+        }
+        .container{text-align:center;max-width:480px;width:100%}
+        .title{
+            font-size:3.5rem;font-weight:700;
+            background:linear-gradient(90deg,#a78bfa,#60a5fa);
+            -webkit-background-clip:text;
+            color:transparent;
+            margin-bottom:.5rem;
+        }
+        .subtitle{font-size:1.1rem;opacity:.8;margin-bottom:3rem}
+        .timer-card{
+            background:rgba(255,255,255,.08);
+            backdrop-filter:blur(12px);
+            border-radius:24px;
+            padding:3rem 2rem;
+            border:1px solid rgba(255,255,255,.1);
+        }
+        .input-group{display:flex;gap:1rem;margin-bottom:2.5rem;flex-wrap:wrap;justify-content:center}
+        #secondsInput{
+            padding:1rem 1.5rem;font-size:1.2rem;border:none;
+            border-radius:16px;width:180px;text-align:center;
+            background:rgba(255,255,255,.15);color:white;outline:none;
+        }
+        #startBtn{
+            padding:1rem 2rem;font-size:1.1rem;font-weight:600;
+            background:linear-gradient(135deg,#8b5cf6,#3b82f6);
+            color:white;border:none;border-radius:16px;cursor:pointer;
+        }
+        .display{font-size:5rem;font-weight:700;margin:2rem 0;color:#fff}
+        .status{font-size:1.1rem;min-height:28px}
+        .footer{margin-top:4rem;opacity:.7;font-size:.95rem}
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="title">FocusTimer</h1>
+        <p class="subtitle">Set a timer and get notified when time's up</p>
+
+        <div class="timer-card">
+            <div class="input-group">
+                <input type="number" id="secondsInput" placeholder="Enter seconds" min="1" max="3600">
+                <button id="startBtn">Start Timer</button>
+            </div>
+
+            <div id="countdownDisplay" class="display">00:00</div>
+            <div class="status" id="status"></div>
+        </div>
+
+        <footer class="footer">
+            <small>Notifications & sound will trigger when timer ends</small>
+        </footer>
+    </div>
+
+    <audio id="beepSound" src="assets/beep.mp3"></audio>
+
+    <script>
+        const secondsInput=document.getElementById("secondsInput");
+        const startBtn=document.getElementById("startBtn");
+        const countdownDisplay=document.getElementById("countdownDisplay");
+        const statusEl=document.getElementById("status");
+        const beepSound=document.getElementById("beepSound");
+
+        let countdownInterval=null;
+
+        function formatTime(seconds){
+            const mins=String(Math.floor(seconds/60)).padStart(2,"0");
+            const secs=String(seconds%60).padStart(2,"0");
+            return `${mins}:${secs}`;
+        }
+
+        function requestNotificationPermission(){
+            if("Notification" in window && Notification.permission==="default"){
+                Notification.requestPermission();
+            }
+        }
+
+        function showNotification(){
+            if("Notification" in window && Notification.permission==="granted"){
+                new Notification("FocusTimer",{
+                    body:"Timer finished!",
+                    icon:"https://img.icons8.com/fluency/96/000000/clock.png"
+                });
+            }
+        }
+
+        function playBeep(){
+            beepSound.currentTime=0;
+            beepSound.play().catch(()=>{});
+        }
+
+        function startTimer(){
+            clearInterval(countdownInterval);
+            let totalSeconds=parseInt(secondsInput.value);
+
+            if(isNaN(totalSeconds)||totalSeconds<=0){
+                statusEl.textContent="Please enter a valid number";
+                statusEl.style.color="#ff6b6b";
+                return;
+            }
+
+            statusEl.textContent="Timer running...";
+            statusEl.style.color="#a78bfa";
+            startBtn.disabled=true;
+            secondsInput.disabled=true;
+
+            countdownDisplay.textContent=formatTime(totalSeconds);
+
+            countdownInterval=setInterval(()=>{
+                totalSeconds--;
+                if(totalSeconds<=0){
+                    clearInterval(countdownInterval);
+                    countdownDisplay.textContent="00:00";
+                    statusEl.textContent="Time’s up!";
+                    statusEl.style.color="#34d399";
+
+                    playBeep();
+                    showNotification();
+
+                    startBtn.disabled=false;
+                    secondsInput.disabled=false;
+                    return;
+                }
+                countdownDisplay.textContent=formatTime(totalSeconds);
+            },1000);
+        }
+
+        startBtn.addEventListener("click",startTimer);
+        secondsInput.addEventListener("keypress",e=>{ if(e.key==="Enter") startTimer(); });
+
+        window.onload=()=>{
+            requestNotificationPermission();
+            secondsInput.focus();
+        };
+    </script>
+</body>
+</html>
