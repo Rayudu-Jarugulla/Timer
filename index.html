@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FocusTimer - Countdown with Alert</title>
+    <title>Rayudu's Timer - Countdown with Alert</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -55,7 +55,7 @@
 <body>
 
     <div class="container">
-        <h1 class="title">FocusTimer</h1>
+        <h1 class="title">Rayudu's Timer</h1>
         <p class="subtitle">Set a timer and get notified when time's up</p>
 
         <div class="timer-card">
@@ -73,86 +73,104 @@
         </footer>
     </div>
 
-    <audio id="beepSound" src="assets/beep.mp3"></audio>
+    <audio id="beepSound" src="sound.mp3"></audio>
 
     <script>
-        const secondsInput=document.getElementById("secondsInput");
-        const startBtn=document.getElementById("startBtn");
-        const countdownDisplay=document.getElementById("countdownDisplay");
-        const statusEl=document.getElementById("status");
-        const beepSound=document.getElementById("beepSound");
+    const secondsInput = document.getElementById("secondsInput");
+    const startBtn = document.getElementById("startBtn");
+    const countdownDisplay = document.getElementById("countdownDisplay");
+    const statusEl = document.getElementById("status");
 
-        let countdownInterval=null;
+    const finalSound = document.getElementById("beepSound"); // final sound
+    const shortBeep = new Audio("beep.mp3");  // add a small beep (ting sound)
 
-        function formatTime(seconds){
-            const mins=String(Math.floor(seconds/60)).padStart(2,"0");
-            const secs=String(seconds%60).padStart(2,"0");
-            return `${mins}:${secs}`;
+    let countdownInterval = null;
+
+    function formatTime(seconds) {
+        const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
+        const secs = String(seconds % 60).padStart(2, "0");
+        return `${mins}:${secs}`;
+    }
+
+    function requestNotificationPermission() {
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    }
+
+    function showNotification() {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("FocusTimer", {
+                body: "Timer finished!",
+                icon: "https://img.icons8.com/fluency/96/clock.png"
+            });
+        }
+    }
+
+    function playShortBeep() {
+        shortBeep.currentTime = 0;
+        shortBeep.play().catch(() => {});
+    }
+
+    function playFinalSound() {
+        finalSound.currentTime = 0;
+        finalSound.play().catch(() => {});
+    }
+
+    function startTimer() {
+        clearInterval(countdownInterval);
+        let totalSeconds = parseInt(secondsInput.value);
+
+        if (isNaN(totalSeconds) || totalSeconds <= 0) {
+            statusEl.textContent = "Please enter a valid number";
+            statusEl.style.color = "#ff6b6b";
+            return;
         }
 
-        function requestNotificationPermission(){
-            if("Notification" in window && Notification.permission==="default"){
-                Notification.requestPermission();
+        statusEl.textContent = "Timer running...";
+        statusEl.style.color = "#a78bfa";
+        startBtn.disabled = true;
+        secondsInput.disabled = true;
+
+        countdownDisplay.textContent = formatTime(totalSeconds);
+
+        countdownInterval = setInterval(() => {
+            totalSeconds--;
+
+            // 🔔 Play short beep on last 5,4,3 seconds → 3 beeps total
+            if (totalSeconds <= 3 && totalSeconds > 0) {
+                playShortBeep();
             }
-        }
 
-        function showNotification(){
-            if("Notification" in window && Notification.permission==="granted"){
-                new Notification("FocusTimer",{
-                    body:"Timer finished!",
-                    icon:"https://img.icons8.com/fluency/96/000000/clock.png"
-                });
-            }
-        }
+            if (totalSeconds <= 0) {
+                clearInterval(countdownInterval);
+                countdownDisplay.textContent = "00:00";
 
-        function playBeep(){
-            beepSound.currentTime=0;
-            beepSound.play().catch(()=>{});
-        }
+                statusEl.textContent = "Time’s up!";
+                statusEl.style.color = "#34d399";
 
-        function startTimer(){
-            clearInterval(countdownInterval);
-            let totalSeconds=parseInt(secondsInput.value);
+                playFinalSound();  // 🔊 final sound.mp3
+                showNotification();
 
-            if(isNaN(totalSeconds)||totalSeconds<=0){
-                statusEl.textContent="Please enter a valid number";
-                statusEl.style.color="#ff6b6b";
+                startBtn.disabled = false;
+                secondsInput.disabled = false;
                 return;
             }
 
-            statusEl.textContent="Timer running...";
-            statusEl.style.color="#a78bfa";
-            startBtn.disabled=true;
-            secondsInput.disabled=true;
+            countdownDisplay.textContent = formatTime(totalSeconds);
+        }, 1000);
+    }
 
-            countdownDisplay.textContent=formatTime(totalSeconds);
+    startBtn.addEventListener("click", startTimer);
+    secondsInput.addEventListener("keypress", e => {
+        if (e.key === "Enter") startTimer();
+    });
 
-            countdownInterval=setInterval(()=>{
-                totalSeconds--;
-                if(totalSeconds<=0){
-                    clearInterval(countdownInterval);
-                    countdownDisplay.textContent="00:00";
-                    statusEl.textContent="Time’s up!";
-                    statusEl.style.color="#34d399";
+    window.onload = () => {
+        requestNotificationPermission();
+        secondsInput.focus();
+    };
+</script>
 
-                    playBeep();
-                    showNotification();
-
-                    startBtn.disabled=false;
-                    secondsInput.disabled=false;
-                    return;
-                }
-                countdownDisplay.textContent=formatTime(totalSeconds);
-            },1000);
-        }
-
-        startBtn.addEventListener("click",startTimer);
-        secondsInput.addEventListener("keypress",e=>{ if(e.key==="Enter") startTimer(); });
-
-        window.onload=()=>{
-            requestNotificationPermission();
-            secondsInput.focus();
-        };
-    </script>
 </body>
 </html>
